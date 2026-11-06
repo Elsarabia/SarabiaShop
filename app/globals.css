@@ -9,12 +9,35 @@
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: clip;
+}
+
+/* Sección de ancho completo dentro del contenedor centrado */
+.bleed {
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
 }
 
 body {
-  background: #f4f4f1;
-  color: #16181b;
-  font-feature-settings: 'tnum' 0;
+  background: #e8e8eb;
+  color: #0f1a3a;
+  font-stretch: 100%;
+}
+
+/* Títulos: Archivo ultracondensada y pesada */
+.display {
+  font-stretch: 62%;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.005em;
+}
+.display-soft {
+  font-stretch: 72%;
+  font-weight: 700;
+  line-height: 1;
+}
+.wide {
+  font-stretch: 112%;
 }
 
 .tabular {
@@ -24,6 +47,9 @@ body {
 :focus-visible {
   outline: 2px solid #2452c7;
   outline-offset: 2px;
+}
+.on-navy :focus-visible {
+  outline-color: #e2c98f;
 }
 
 @media (prefers-reduced-motion: reduce) {

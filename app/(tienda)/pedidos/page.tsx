@@ -27,7 +27,7 @@ export default function MisPedidos() {
 
   return (
     <div className="mx-auto max-w-2xl py-6">
-      <h1 className="text-[26px] font-bold tracking-tight">Mis pedidos</h1>
+      <h1 className="display text-[52px] sm:text-[64px]">Mis pedidos</h1>
       {customer && <p className="mt-1 text-sm text-muted">Hola, {customer.full_name.split(' ')[0]}. Aquí ves el estado de cada apartado.</p>}
 
       {cl || (customer && !orders && !error) ? (

@@ -41,6 +41,13 @@ export function sizes(p: Product): Variant[] {
 export const left = (v: Variant) => Math.max(0, (v.stock_qty ?? 0) - v.reserved_qty);
 export const productLeft = (p: Product) => Math.max(0, p.goal_qty - p.reserved_qty);
 
+/** "Playera Banana Republic Script Blanca" → "Script Blanca" */
+export function shortName(p: Pick<Product, 'name' | 'details'>) {
+  const brand = p.details?.marca || '';
+  const s = p.name.replace(/^Playera\s+/i, '').replace(brand, '').trim();
+  return s || p.name;
+}
+
 export function slugSku(sku: string) {
   return sku.toLowerCase();
 }

@@ -123,7 +123,7 @@ export default function Apartado() {
   return (
     <div className="mx-auto max-w-2xl pb-36">
       <div className="pt-2"><BackLink href="/" label="Seguir viendo" /></div>
-      <h1 className="mt-1 text-[26px] font-bold tracking-tight">Tu apartado</h1>
+      <h1 className="display mt-2 text-[52px] sm:text-[64px]">Tu apartado</h1>
       <p className="text-sm text-muted">{piezas(count)} · {money(subtotal)}</p>
 
       <section aria-label="Piezas" className={`${card} mt-4 divide-y divide-[#EEEEEA]`}>

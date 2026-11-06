@@ -9,7 +9,7 @@ export default function Politicas() {
   const policies = company?.settings?.policies || [];
   return (
     <div className="mx-auto max-w-2xl py-6">
-      <h1 className="text-[26px] font-bold tracking-tight">Políticas de compra</h1>
+      <h1 className="display text-[52px] sm:text-[64px]">Políticas de compra</h1>
       <p className="mt-1 text-sm text-muted">Claras desde el principio, para que apartes con confianza.</p>
       {loading && !company ? (
         <div className="mt-5 space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}</div>

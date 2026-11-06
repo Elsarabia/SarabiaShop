@@ -2,52 +2,59 @@
 
 import Link from 'next/link';
 import { useCompany, useProducts } from '@/lib/hooks';
-import { fechaLarga, money, productLeft } from '@/lib/format';
+import { fechaLarga, money, shortName, sizes } from '@/lib/format';
+import type { Product } from '@/lib/types';
 import { ProductCard } from '@/components/ProductCard';
-import { Icon, Skeleton, StateBox, btnPrimary } from '@/components/ui';
+import { Skeleton, StateBox, btnPrimary } from '@/components/ui';
+
+const COUNT_WORD: Record<number, string> = { 1: 'El modelo', 2: 'Los dos modelos', 3: 'Los tres modelos', 4: 'Los cuatro modelos', 5: 'Los cinco modelos', 6: 'Los seis modelos' };
 
 export default function Tienda() {
   const { company, error: cErr, reload: reloadCompany } = useCompany();
   const { products, loading, error, reload } = useProducts(company?.id);
 
-  const totalLeft = products.reduce((a, p) => a + productLeft(p), 0);
+  const stock = products.reduce((a, p) => a + sizes(p).reduce((b, v) => b + (v.stock_qty ?? 0), 0), 0);
+  const taken = products.reduce((a, p) => a + sizes(p).reduce((b, v) => b + v.reserved_qty, 0), 0);
+  const left = Math.max(stock - taken, 0);
   const arrival = products.find((p) => p.expected_arrival)?.expected_arrival;
   const price = products[0]?.price;
   const d = company?.settings?.delivery;
+  const ready = products.length > 0;
 
   return (
-    <div className="pb-6">
-      <section className="pt-6 sm:pt-10">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF1CC] px-3 py-1 text-xs font-semibold text-[#7A5200]">
-            <Icon name="clock" size={14} stroke={2.2} /> Preventa{arrival ? ` · llegan el ${fechaLarga(arrival)}` : ''}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#DFF3E7] px-3 py-1 text-xs font-semibold text-[#11663F]">
-            <Icon name="shield" size={14} stroke={2.2} /> 100 % originales
-          </span>
-        </div>
-        <h1 className="mt-4 max-w-2xl text-[30px] font-bold leading-[1.1] tracking-tight sm:text-5xl">
-          Playeras originales Banana Republic y GAP
-        </h1>
-        <p className="mt-3 max-w-xl text-base text-muted sm:text-lg">
-          Aparta tu talla hoy desde tu celular. Son pocas piezas: solo 3 por talla de cada modelo.
-        </p>
-        <dl className="mt-5 grid max-w-xl grid-cols-3 gap-2">
-          {[
-            { k: 'Precio', v: price ? `${money(price)} c/u` : '—' },
-            { k: 'Tallas', v: 'S · M · L' },
-            { k: 'Disponibles', v: loading ? '…' : `${totalLeft} piezas` },
-          ].map((x) => (
-            <div key={x.k} className="rounded-xl border border-line bg-white px-3 py-2.5">
-              <dt className="text-xs text-muted">{x.k}</dt>
-              <dd className="mt-0.5 text-[15px] font-bold tabular">{x.v}</dd>
+    <div>
+      {/* Portada */}
+      <section className="on-navy bleed bg-navy text-bone">
+        <div className="mx-auto max-w-7xl px-4 pb-12 pt-10 sm:px-6 sm:pb-16 sm:pt-16">
+          <h1 className="display text-[clamp(84px,24vw,232px)]">
+            {ready ? <>Solo {stock}<br className="sm:hidden" /> piezas.</> : <>Solo unas<br className="sm:hidden" /> piezas.</>}
+          </h1>
+          <div className="mt-6 grid gap-8 sm:mt-10 lg:grid-cols-[minmax(0,26rem)_1fr] lg:items-end lg:gap-16">
+            <div>
+              <p className="max-w-md text-[17px] leading-[1.55] text-bone/80 sm:text-lg">
+                Playeras originales Banana Republic y GAP. Tres por talla de cada modelo, a {price ? money(price) : '$350'} cada una.
+                {arrival && <> Llegan a Tijuana el {fechaLarga(arrival)}.</>}
+              </p>
+              <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+                <a href="#modelos" className="inline-flex h-[52px] items-center justify-center rounded-[6px] bg-bone px-7 text-[16px] font-semibold text-navy transition hover:bg-white">
+                  Elegir mi talla
+                </a>
+                <Link href="/politicas" className="text-[15px] text-bone/70 underline decoration-bone/30 underline-offset-4 hover:text-bone">
+                  Cómo pagas y recibes
+                </Link>
+              </div>
             </div>
-          ))}
-        </dl>
+            <Tally products={products} loading={loading && !ready} left={left} />
+          </div>
+        </div>
       </section>
 
-      <section aria-labelledby="h-modelos" className="mt-8">
-        <h2 id="h-modelos" className="mb-3 text-xl font-bold tracking-tight">Modelos</h2>
+      {/* Modelos */}
+      <section id="modelos" aria-labelledby="h-modelos" className="scroll-mt-16 pt-14 sm:pt-20">
+        <div className="mb-7 flex items-end justify-between gap-4">
+          <h2 id="h-modelos" className="display text-[52px] sm:text-[72px]">{COUNT_WORD[products.length] || 'Los modelos'}</h2>
+          {ready && <p className="hidden pb-2 text-[15px] text-muted sm:block">Toca un modelo para ver tallas</p>}
+        </div>
         {(cErr || error) && (
           <StateBox icon="alert" tone="bad" title="No pudimos cargar la tienda"
             action={<button className={`${btnPrimary} h-11`} onClick={() => { reloadCompany(); reload(); }}>Reintentar</button>}>
@@ -55,57 +62,120 @@ export default function Tienda() {
           </StateBox>
         )}
         {!cErr && !error && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
-            {loading && products.length === 0
+          <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-5">
+            {loading && !ready
               ? Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="overflow-hidden rounded-2xl border border-line bg-white">
-                    <Skeleton className="aspect-[3/4] rounded-none" />
-                    <div className="space-y-2 p-3"><Skeleton className="h-3 w-1/2" /><Skeleton className="h-4 w-4/5" /><Skeleton className="h-2 w-full" /></div>
+                  <div key={i}>
+                    <Skeleton className="aspect-[3/4] rounded-[4px]" />
+                    <div className="mt-3 space-y-2"><Skeleton className="h-6 w-4/5" /><Skeleton className="h-3 w-1/2" /></div>
                   </div>
                 ))
-              : products.map((p) => <ProductCard key={p.id} p={p} />)}
+              : products.map((p, i) => (
+                  <div key={p.id} className={products.length % 2 === 1 && i === products.length - 1 ? 'col-span-2 sm:col-span-1' : ''}>
+                    <ProductCard p={p} />
+                  </div>
+                ))}
           </div>
         )}
       </section>
 
-      <section aria-labelledby="h-como" className="mt-12">
-        <h2 id="h-como" className="text-xl font-bold tracking-tight">Así de fácil</h2>
-        <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+      {/* Cómo funciona: es una secuencia real */}
+      <section aria-labelledby="h-como" className="mt-24 border-t border-line pt-10">
+        <h2 id="h-como" className="display text-[44px] sm:text-[56px]">Cómo apartar</h2>
+        <ol className="mt-8 grid gap-8 sm:grid-cols-3 sm:gap-10">
           {[
-            { n: 1, t: 'Elige modelo y talla', d: 'Ves en vivo cuántas piezas quedan de cada talla.' },
-            { n: 2, t: 'Aparta y elige cómo pagar', d: 'Transferencia, anticipo del 50 % o efectivo al recibir.' },
-            { n: 3, t: 'Recíbelas', d: arrival ? `Llegan el ${fechaLarga(arrival)}. Te avisamos por WhatsApp.` : 'Te avisamos por WhatsApp.' },
-          ].map((s) => (
-            <li key={s.n} className="flex gap-3 rounded-2xl border border-line bg-white p-4">
-              <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-ink text-sm font-bold text-white">{s.n}</span>
-              <div>
-                <div className="font-semibold">{s.t}</div>
-                <div className="mt-0.5 text-sm text-muted">{s.d}</div>
+            { t: 'Elige modelo y talla', d: 'Ves en vivo cuántas quedan de cada talla. Cuando se acaban, se acaban.' },
+            { t: 'Aparta y elige cómo pagar', d: 'Transferencia completa, la mitad para apartar y el resto al recibir, o todo en efectivo al recibir.' },
+            { t: 'Recíbela', d: arrival ? `Llegan el ${fechaLarga(arrival)}. Te escribimos por WhatsApp para coordinar la entrega.` : 'Te escribimos por WhatsApp para coordinar la entrega.' },
+          ].map((s, i) => (
+            <li key={s.t} className="grid grid-cols-[3.25rem_1fr] gap-x-3">
+              <span aria-hidden="true" className="display text-[56px] text-gold">{i + 1}</span>
+              <div className="pt-1">
+                <h3 className="text-[18px] font-semibold">{s.t}</h3>
+                <p className="mt-1.5 text-[15px] leading-6 text-muted">{s.d}</p>
               </div>
             </li>
           ))}
         </ol>
       </section>
 
+      {/* Entregas como lista de precios */}
       {d && (
-        <section aria-labelledby="h-entrega" className="mt-10">
-          <h2 id="h-entrega" className="text-xl font-bold tracking-tight">Entregas</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {(['recoger', 'domicilio', 'paqueteria'] as const).filter((k) => d[k]?.enabled !== false).map((k) => (
-              <div key={k} className="flex gap-3 rounded-2xl border border-line bg-white p-4">
-                <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-soft"><Icon name={k === 'recoger' ? 'pin' : k === 'domicilio' ? 'home' : 'truck'} /></span>
-                <div>
-                  <div className="font-semibold">{d[k]?.label}</div>
-                  <div className="mt-0.5 text-sm leading-5 text-muted">{d[k]?.details}</div>
-                </div>
-              </div>
-            ))}
+        <section aria-labelledby="h-entrega" className="mt-20">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.6fr] lg:gap-16">
+            <div>
+              <h2 id="h-entrega" className="display text-[44px] sm:text-[56px]">Entregas</h2>
+              <p className="mt-3 max-w-sm text-[15px] leading-6 text-muted">
+                Eliges cómo recibir al apartar. Cambios solo por defecto de fábrica.{' '}
+                <Link href="/politicas" className="text-ink underline underline-offset-4">Ver políticas</Link>
+              </p>
+            </div>
+            <dl className="divide-y divide-line border-y border-line">
+              {(['recoger', 'domicilio', 'paqueteria'] as const).filter((k) => d[k] && d[k]?.enabled !== false).map((k) => {
+                const o = d[k]!;
+                const cost = o.quote ? 'Se cotiza' : !o.cost ? 'Gratis' : money(o.cost);
+                return (
+                  <div key={k} className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-1 py-5">
+                    <dt className="text-[18px] font-semibold">{o.label}</dt>
+                    <dd className="display-soft text-right text-[24px] tabular">{cost}</dd>
+                    <dd className="col-span-2 max-w-xl text-[15px] leading-6 text-muted">{o.details}</dd>
+                  </div>
+                );
+              })}
+            </dl>
           </div>
-          <Link href="/politicas" className="mt-4 inline-flex h-10 items-center gap-1 text-sm font-semibold underline-offset-4 hover:underline">
-            Ver políticas de pagos, cambios y reembolsos <Icon name="right" size={16} />
-          </Link>
         </section>
       )}
+    </div>
+  );
+}
+
+/** Una barra por playera: claras = disponibles, doradas = ya apartadas. Se actualiza en vivo. */
+function Tally({ products, loading, left }: { products: Product[]; loading: boolean; left: number }) {
+  let n = 0;
+  return (
+    <div>
+      <div className="flex items-end gap-3 sm:gap-5" aria-hidden={loading}>
+        {loading
+          ? Array.from({ length: 5 }).map((_, g) => (
+              <div key={g} className="flex flex-1 gap-[3px]">
+                {Array.from({ length: 9 }).map((__, i) => <span key={i} className="h-12 flex-1 rounded-[1px] bg-bone/15 sm:h-20" />)}
+              </div>
+            ))
+          : products.map((p) => {
+              const vs = sizes(p);
+              const free = vs.reduce((a, v) => a + Math.max((v.stock_qty ?? 0) - v.reserved_qty, 0), 0);
+              return (
+                <Link key={p.id} href={`/p/${p.sku.toLowerCase()}`} className="group flex min-w-0 flex-1 flex-col gap-2"
+                  aria-label={`${shortName(p)}: quedan ${free} de ${vs.reduce((a, v) => a + (v.stock_qty ?? 0), 0)}`}>
+                  <span className="flex gap-[5px] sm:gap-2">
+                    {vs.map((v) => {
+                      const total = v.stock_qty ?? 0;
+                      return (
+                        <span key={v.id} className="flex flex-1 gap-[2px] sm:gap-[3px]" title={`Talla ${v.name}`}>
+                          {Array.from({ length: total }).map((_, i) => {
+                            const isTaken = i >= total - v.reserved_qty;
+                            const delay = n++ * 14;
+                            return (
+                              <span key={i}
+                                className={`block h-12 flex-1 origin-bottom animate-rise rounded-[1px] transition-colors duration-500 sm:h-20 ${isTaken ? 'bg-gold' : 'bg-bone group-hover:bg-white'}`}
+                                style={{ animationDelay: `${delay}ms` }} />
+                            );
+                          })}
+                        </span>
+                      );
+                    })}
+                  </span>
+                  <span className="hidden truncate text-[13px] text-bone/60 group-hover:text-bone sm:block">{shortName(p)}</span>
+                </Link>
+              );
+            })}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-[14px] text-bone/70">
+        <span className="font-semibold text-bone">{loading ? 'Contando piezas…' : left === 0 ? 'Agotado' : `Quedan ${left}`}</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-[5px] rounded-[1px] bg-bone" /> Disponible</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-[5px] rounded-[1px] bg-gold" /> Apartada</span>
+      </div>
     </div>
   );
 }

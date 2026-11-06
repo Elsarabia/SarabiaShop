@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useCart } from '@/lib/cart';
 import { useCompany, useProducts } from '@/lib/hooks';
-import { fechaLarga, left, money, productImage, productLeft, sizes } from '@/lib/format';
-import { BackLink, Icon, Progress, Skeleton, StateBox, btnPrimary, btnSecondary, useToast } from '@/components/ui';
+import { fechaLarga, left, money, productImage, productLeft, shortName, sizes } from '@/lib/format';
+import { BackLink, Icon, Pieces, Skeleton, StateBox, btnPrimary, btnSecondary, useToast } from '@/components/ui';
 
 export default function ProductView({ sku }: { sku: string }) {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function ProductView({ sku }: { sku: string }) {
   if (loading && !p) {
     return (
       <div className="grid gap-6 py-6 md:grid-cols-2">
-        <Skeleton className="aspect-[3/4] w-full rounded-2xl" />
+        <Skeleton className="aspect-[3/4] w-full rounded-[4px]" />
         <div className="space-y-3"><Skeleton className="h-4 w-1/3" /><Skeleton className="h-8 w-4/5" /><Skeleton className="h-6 w-1/4" /><Skeleton className="h-24 w-full" /></div>
       </div>
     );
@@ -63,110 +63,118 @@ export default function ProductView({ sku }: { sku: string }) {
     else toast(`Agregaste ${qty} ${p.name.replace(/^Playera\s+/i, '')} talla ${selected.name}`);
   };
 
+  const actions = !soldOut && (
+    <div className="flex gap-2">
+      <button type="button" disabled={!selected || maxQty < 1} onClick={() => addToCart(false)}
+        className={`${btnSecondary} h-14 flex-none px-4 sm:px-5`}>
+        <span className="hidden sm:inline">Agregar y seguir viendo</span><span className="sm:hidden">Agregar</span>
+      </button>
+      <button type="button" disabled={!selected || maxQty < 1} onClick={() => addToCart(true)} className={`${btnPrimary} h-14 flex-1 text-[16px]`}>
+        {selected ? `Apartar talla ${selected.name} por ${money(Number(p.price) * Math.max(qty, 1))}` : 'Elige tu talla'}
+      </button>
+    </div>
+  );
+
   return (
-    <div className="pb-32 md:pb-10">
-      <div className="pt-2"><BackLink href="/" label="Modelos" /></div>
-      <div className="mt-2 grid gap-6 md:grid-cols-2 md:gap-10">
-        <div>
+    <div className="pb-32 md:pb-6">
+      <div className="pt-3"><BackLink href="/#modelos" label="Todos los modelos" /></div>
+      <div className="mt-3 grid gap-7 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-12 lg:gap-16">
+        <div className="md:sticky md:top-24 md:self-start">
           <button type="button" onClick={() => setZoom(true)} aria-label="Ampliar foto"
-            className="relative block w-full overflow-hidden rounded-2xl border border-line bg-soft cursor-zoom-in">
-            {img && <img src={img} alt={p.name} className="aspect-[3/4] w-full object-cover" />}
-            <span className="absolute bottom-3 right-3 inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-3 text-[13px] font-semibold">
+            className="relative block w-full cursor-zoom-in overflow-hidden rounded-[4px] bg-studio">
+            {img && <img src={img} alt={p.name} className={`aspect-[3/4] w-full object-cover ${soldOut ? 'opacity-50 grayscale' : ''}`} />}
+            <span className="absolute bottom-3 right-3 inline-flex h-9 items-center gap-1.5 rounded-[4px] bg-white/90 px-3 text-[13px] font-semibold">
               <Icon name="zoom" size={16} stroke={2} /> Ampliar
             </span>
           </button>
         </div>
 
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-8">
           <div>
-            <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF1CC] px-2.5 py-1 text-xs font-semibold text-[#7A5200]">
-                <Icon name="clock" size={13} stroke={2.2} /> {p.expected_arrival ? `Llega el ${fechaLarga(p.expected_arrival)}` : 'Preventa'}
+            <p className="text-[15px] text-muted">{p.details?.marca}</p>
+            <h1 className="display mt-2 text-[64px] sm:text-[88px]">{shortName(p)}</h1>
+            <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="display-soft text-[36px] tabular">{money(p.price)}</span>
+              <span className="text-[15px] text-muted">
+                Original{p.expected_arrival ? `, llega el ${fechaLarga(p.expected_arrival)}` : ''}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#DFF3E7] px-2.5 py-1 text-xs font-semibold text-[#11663F]">
-                <Icon name="shield" size={13} stroke={2.2} /> Original
-              </span>
-            </div>
-            <h1 className="mt-3 text-[26px] font-bold leading-tight tracking-tight sm:text-3xl">{p.name}</h1>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-3xl font-bold tracking-tight tabular">{money(p.price)}</span>
-              <span className="text-[15px] text-muted">por pieza</span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-line bg-white p-4">
-            <div className="flex items-baseline justify-between">
-              <span className="font-semibold">{soldOut ? 'Agotado' : `Quedan ${rem} de ${p.goal_qty}`}</span>
-              <span className="text-sm text-muted tabular">{p.reserved_qty} apartadas</span>
+          {soldOut ? (
+            <div className="border-y border-line py-5">
+              <p className="display-soft text-[28px]">Se agotó</p>
+              <p className="mt-1 text-[15px] text-muted">Las {p.goal_qty} piezas de este modelo ya tienen dueño. Revisa los otros modelos.</p>
             </div>
-            <div className="mt-2.5"><Progress value={p.reserved_qty} max={p.goal_qty} done={rem === 0} /></div>
-            <p className="mt-2.5 text-[13px] text-muted">La disponibilidad se actualiza en vivo.</p>
-          </div>
-
-          {!soldOut && (
+          ) : (
             <fieldset>
-              <legend className="mb-2 font-semibold">Elige tu talla</legend>
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <legend className="text-[17px] font-semibold">Elige tu talla</legend>
+                <span className="text-[14px] text-muted tabular">Quedan {rem} de {p.goal_qty}</span>
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 {sz.map((v) => {
                   const l = left(v);
                   const on = v.id === sizeId;
                   return (
                     <button key={v.id} type="button" disabled={l === 0} aria-pressed={on} onClick={() => setSizeId(v.id)}
-                      className={`flex h-[60px] flex-col items-center justify-center rounded-xl border bg-white transition disabled:cursor-not-allowed disabled:bg-ground ${on ? 'border-2 border-ink' : 'border-line2 hover:border-[#9A9DA2]'}`}>
-                      <span className={`text-lg font-bold ${l === 0 ? 'text-[#A0A4AA] line-through' : ''}`}>{v.name}</span>
-                      <span className={`text-xs ${l === 0 ? 'text-[#8A8F96]' : l === 1 ? 'font-semibold text-[#C2410C]' : 'text-muted'}`}>
+                      className={`flex h-[104px] flex-col items-center justify-center gap-2 rounded-[6px] border transition disabled:cursor-not-allowed disabled:opacity-60 ${on ? 'border-navy bg-navy text-bone' : 'border-line2 bg-white hover:border-navy'}`}>
+                      <span className={`display text-[40px] ${l === 0 ? 'line-through' : ''}`}>{v.name}</span>
+                      <span className="flex items-center gap-2">
+                        <Pieces total={v.stock_qty ?? 0} taken={v.reserved_qty} size={7} tone={on ? 'light' : 'navy'} label={`Talla ${v.name}: ${l === 0 ? 'agotada' : `quedan ${l}`}`} />
+                      </span>
+                      <span className={`text-[12px] ${on ? 'text-bone/80' : 'text-muted'}`}>
                         {l === 0 ? 'Agotada' : l === 1 ? 'Queda 1' : `Quedan ${l}`}
                       </span>
                     </button>
                   );
                 })}
               </div>
+              <p className="mt-3 text-[13px] text-muted">Puntos azules: piezas libres. Dorados: ya apartadas. Se actualiza en vivo.</p>
             </fieldset>
           )}
 
           {!soldOut && selected && (
-            <div>
-              <div className="mb-2 font-semibold"><label htmlFor="qty">Cantidad</label></div>
-              <div className="flex items-center gap-2">
-                <button type="button" aria-label="Quitar una" disabled={qty <= 1} onClick={() => setQty(qty - 1)}
-                  className="flex h-12 w-12 items-center justify-center rounded-xl border border-line2 bg-white disabled:opacity-40"><Icon name="minus" stroke={2.2} /></button>
-                <span id="qty" aria-live="polite" className="w-12 text-center text-xl font-bold tabular">{maxQty < 1 ? 0 : qty}</span>
-                <button type="button" aria-label="Agregar una" disabled={qty >= maxQty} onClick={() => setQty(qty + 1)}
-                  className="flex h-12 w-12 items-center justify-center rounded-xl border border-line2 bg-white disabled:opacity-40"><Icon name="plus" stroke={2.2} /></button>
-                <span className="ml-2 text-sm text-muted">
-                  {maxQty < 1 ? (limitReached ? `Máximo ${maxPerson} por persona` : 'Ya tienes todas en tu apartado') : `Máximo ${maxQty}`}
+            <div className="flex items-center justify-between gap-4">
+              <label htmlFor="qty" className="text-[17px] font-semibold">Cantidad</label>
+              <div className="flex items-center gap-3">
+                <span className="text-[13px] text-muted">
+                  {maxQty < 1 ? (limitReached ? `Máximo ${maxPerson} por persona` : 'Ya están todas en tu apartado') : `Máximo ${maxQty}`}
                 </span>
+                <div className="flex items-center rounded-[6px] border border-line2 bg-white">
+                  <button type="button" aria-label="Quitar una" disabled={qty <= 1} onClick={() => setQty(qty - 1)}
+                    className="flex h-12 w-12 items-center justify-center disabled:opacity-30"><Icon name="minus" stroke={2} /></button>
+                  <span id="qty" aria-live="polite" className="w-8 text-center text-lg font-semibold tabular">{maxQty < 1 ? 0 : qty}</span>
+                  <button type="button" aria-label="Agregar una" disabled={qty >= maxQty} onClick={() => setQty(qty + 1)}
+                    className="flex h-12 w-12 items-center justify-center disabled:opacity-30"><Icon name="plus" stroke={2} /></button>
+                </div>
               </div>
             </div>
           )}
 
-          {p.description && <p className="text-[15px] leading-6 text-[#33373D]">{p.description}</p>}
+          <div className="hidden md:block">{actions}</div>
 
-          <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-sm">
-            {p.details?.marca && (<><dt className="text-muted">Marca</dt><dd>{p.details.marca}</dd></>)}
-            {p.details?.color && (<><dt className="text-muted">Color</dt><dd>{p.details.color}</dd></>)}
-            <dt className="text-muted">Tallas</dt><dd>{sz.map((v) => v.name).join(' · ')}</dd>
-            {p.max_per_customer && (<><dt className="text-muted">Límite</dt><dd>{p.max_per_customer} piezas por persona</dd></>)}
-            <dt className="text-muted">Cambios</dt><dd>Solo por defecto de fábrica · <Link href="/politicas" className="underline underline-offset-2">ver políticas</Link></dd>
+          {p.description && <p className="max-w-prose text-[16px] leading-7 text-[#2C3550]">{p.description}</p>}
+
+          <dl className="grid grid-cols-[7rem_1fr] border-t border-line text-[15px]">
+            {p.details?.marca && (<><dt className="border-b border-line py-3 text-muted">Marca</dt><dd className="border-b border-line py-3">{p.details.marca}</dd></>)}
+            {p.details?.color && (<><dt className="border-b border-line py-3 text-muted">Color</dt><dd className="border-b border-line py-3">{p.details.color}</dd></>)}
+            <dt className="border-b border-line py-3 text-muted">Tallas</dt><dd className="border-b border-line py-3">{sz.map((v) => v.name).join(', ')}</dd>
+            {p.max_per_customer && (<><dt className="border-b border-line py-3 text-muted">Límite</dt><dd className="border-b border-line py-3">{p.max_per_customer} por persona</dd></>)}
+            <dt className="border-b border-line py-3 text-muted">Cambios</dt>
+            <dd className="border-b border-line py-3">Solo por defecto de fábrica. <Link href="/politicas" className="underline underline-offset-4">Ver políticas</Link></dd>
           </dl>
         </div>
       </div>
 
       {!soldOut && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 p-3 backdrop-blur md:static md:mt-6 md:border-0 md:bg-transparent md:p-0">
-          <div className="mx-auto flex max-w-6xl gap-2 md:justify-end">
-            <button type="button" disabled={!selected || maxQty < 1} onClick={() => addToCart(false)} className={`${btnSecondary} h-14 flex-none px-4 md:w-56`}>
-              <Icon name="plus" size={18} stroke={2.2} /><span className="hidden sm:inline">Agregar y seguir viendo</span><span className="sm:hidden">Agregar</span>
-            </button>
-            <button type="button" disabled={!selected || maxQty < 1} onClick={() => addToCart(true)} className={`${btnPrimary} h-14 flex-1 text-base md:w-72 md:flex-none`}>
-              {selected ? `Apartar talla ${selected.name} · ${money(Number(p.price) * Math.max(qty, 1))}` : 'Elige tu talla'}
-            </button>
-          </div>
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-ground/95 p-3 backdrop-blur md:hidden">
+          {actions}
         </div>
       )}
 
       {zoom && img && (
-        <div role="dialog" aria-modal="true" aria-label="Foto ampliada" className="fixed inset-0 z-50 flex flex-col bg-[#0F1012] animate-fade">
+        <div role="dialog" aria-modal="true" aria-label="Foto ampliada" className="fixed inset-0 z-50 flex flex-col bg-navy animate-fade">
           <div className="flex justify-end p-3">
             <button type="button" onClick={() => setZoom(false)} aria-label="Cerrar" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 text-white">
               <Icon name="x" />

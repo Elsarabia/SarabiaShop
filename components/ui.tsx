@@ -56,15 +56,12 @@ export function Badge({ label, fg, bg, icon, small }: { label: string; fg: strin
   );
 }
 
-export function Logo({ name = 'SarabiaShop', compact }: { name?: string; compact?: boolean }) {
+/** Wordmark: "Sarabia" ultracondensada + "Shop" en ancho normal. */
+export function Logo({ compact, size = 26 }: { name?: string; compact?: boolean; size?: number }) {
   return (
-    <span className="inline-flex items-center gap-2.5">
-      <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-ink text-white">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M16.5 7.5c-.8-1.4-2.4-2.2-4.4-2.2-2.6 0-4.3 1.4-4.3 3.3 0 4.6 9 2.6 9 7.2 0 2.1-1.9 3.6-4.7 3.6-2.2 0-4-.9-4.9-2.5" />
-        </svg>
-      </span>
-      {!compact && <span className="text-[17px] font-bold tracking-tight">{name}</span>}
+    <span className="inline-flex items-baseline leading-none" style={{ fontSize: size }}>
+      <span className="display" style={{ letterSpacing: '0.01em' }}>Sarabia</span>
+      {!compact && <span className="ml-[0.12em] text-[0.62em] font-normal tracking-[0.02em]">Shop</span>}
     </span>
   );
 }
@@ -72,9 +69,27 @@ export function Logo({ name = 'SarabiaShop', compact }: { name?: string; compact
 export function Progress({ value, max, done }: { value: number; max: number; done?: boolean }) {
   const pct = Math.min(100, (value / Math.max(max, 1)) * 100);
   return (
-    <div role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value} className="h-2 overflow-hidden rounded-full bg-[#E9E9E4]">
-      <div className="h-full origin-left animate-grow rounded-full transition-[width] duration-700" style={{ width: `${pct}%`, background: done ? '#137A4B' : '#16181B' }} />
+    <div role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value} className="h-1.5 overflow-hidden rounded-full bg-soft">
+      <div className="h-full origin-left animate-grow rounded-full transition-[width] duration-700" style={{ width: `${pct}%`, background: done ? '#137A4B' : '#0F1A3A' }} />
     </div>
+  );
+}
+
+/**
+ * Una marca por pieza física. Sólida = disponible; dorada = ya apartada.
+ * `tone` define el color de las disponibles según el fondo.
+ */
+export function Pieces({ total, taken, tone = 'navy', size = 9, label }: {
+  total: number; taken: number; tone?: 'navy' | 'light'; size?: number; label?: string;
+}) {
+  const free = tone === 'light' ? '#F6F6F7' : '#0F1A3A';
+  return (
+    <span className="inline-flex gap-[3px]" role="img" aria-label={label ?? `${Math.max(total - taken, 0)} de ${total} disponibles`}>
+      {Array.from({ length: total }).map((_, i) => (
+        <span key={i} className="block rounded-full transition-colors duration-500"
+          style={{ width: size, height: size, background: i < total - taken ? free : '#B08D4A' }} />
+      ))}
+    </span>
   );
 }
 
@@ -87,7 +102,7 @@ export function Spinner({ className = '' }: { className?: string }) {
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-[#E9E9E4] ${className}`} />;
+  return <div className={`animate-pulse rounded-lg bg-soft ${className}`} />;
 }
 
 export function StateBox({ icon, tone = 'neutral', title, children, action }: {
@@ -128,11 +143,11 @@ export function BackLink({ href, label }: { href: string; label: string }) {
 }
 
 export const btnPrimary =
-  'inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:bg-[#B9BAB6]';
+  'inline-flex items-center justify-center gap-2 rounded-[6px] bg-ink px-5 font-semibold tracking-[0.01em] text-bone transition hover:bg-navy2 disabled:cursor-not-allowed disabled:bg-[#A9ACB8]';
 export const btnSecondary =
-  'inline-flex items-center justify-center gap-2 rounded-xl bg-soft px-4 font-semibold text-ink transition hover:bg-[#E6E6E1] disabled:opacity-50';
+  'inline-flex items-center justify-center gap-2 rounded-[6px] border border-ink/80 bg-transparent px-4 font-semibold text-ink transition hover:bg-ink/5 disabled:opacity-40';
 export const btnOutline =
-  'inline-flex items-center justify-center gap-2 rounded-xl border border-line2 bg-white px-4 font-semibold text-ink transition hover:bg-ground disabled:opacity-50';
-export const card = 'rounded-2xl border border-line bg-white';
+  'inline-flex items-center justify-center gap-2 rounded-[6px] border border-line2 bg-white px-4 font-semibold text-ink transition hover:bg-bone disabled:opacity-50';
+export const card = 'rounded-[10px] border border-line bg-white';
 export const input =
-  'h-12 w-full rounded-xl border border-line2 bg-white px-3.5 text-base text-ink outline-none placeholder:text-[#8A8F96] focus:border-ink';
+  'h-12 w-full rounded-[6px] border border-line2 bg-white px-3.5 text-base text-ink outline-none placeholder:text-[#8A8F96] focus:border-ink';
